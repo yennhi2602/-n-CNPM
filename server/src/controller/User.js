@@ -1,48 +1,48 @@
 import userModel from "../models/User.js";
 import bcrypt from "bcryptjs";
+import JWT from "jsonwebtoken";
 
 export const registerController = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
+  try {
+      const { name, email, password } = req.body;
 
-        // Kiểm tra các trường bắt buộc
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: "All fields are required" });
-        }
+      // Kiểm tra các trường bắt buộc
+      if (!name || !email || !password) {
+          return res.status(400).json({ error: "All fields are required" });
+      }
 
-        // Kiểm tra email đã tồn tại
-        const user = await userModel.findOne({ email });
-        if (user) {
-            return res.status(400).json({ error: "User already exists" });
-        }
+      // Kiểm tra email đã tồn tại
+      const user = await userModel.findOne({ email });
+      if (user) {
+          return res.status(400).json({ error: "User already exists" });
+      }
 
-        // Mã hóa mật khẩu
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+      // Mã hóa mật khẩu
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Tạo và lưu user mới
-        const newUser = new userModel({
-            name,
-            email,
-            password: hashedPassword,
-        }).save();
-        await newUser.save();
+      // Tạo và lưu user mới
+      const newUser = new userModel({
+          name,
+          email,
+          password: hashedPassword,
+      });
+      await newUser.save(); // Chỉ gọi .save() một lần
 
-        // Phản hồi thành công
-        res.status(201).json({
-            success: true,
-            message: "User registered",
-        });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            success: false,
-            message: "Problem in register API",
-            error: error.message,
-        });
-    }
+      // Phản hồi thành công
+      res.status(201).json({
+          success: true,
+          message: "User registered",
+      });
+  } catch (error) {
+      console.log(error);
+      res.status(500).json({
+          success: false,
+          message: "Problem in register API",
+          error: error.message,
+      });
+  }
 };
-
 // login controller
 export const loginController = async (req, res) => {
     try {
@@ -57,16 +57,25 @@ export const loginController = async (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
       }
   
-      const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch =  bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
   
+      const token = JWT.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
       
+      });
+    
       return res.status(201).send({
         success: true,
         message: "Logged in successfully",
-       user,
+        token,
+       user:{
+        id: user._id,
+        email: user.email,
+        role: user.role,
+       },
       });
     } catch (error) {
       console.log(error);
