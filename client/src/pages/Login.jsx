@@ -1,19 +1,52 @@
-
-//import axios from "axios";
+import axios from "axios";
 import React, { useState } from "react";
-//import { FaFacebook, FaGoogle } from "react-icons/fa";
-//import { useLocation, useNavigate } from "react-router-dom";
-//import { toast } from "react-toastify";
-//import { useAuth } from "../context/UserContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useAuth } from "../context/UserContext";
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [auth, setAuth] = useAuth(); // Sửa thành array destructuring
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Xử lý logic đăng nhập ở đây
-    console.log("Email:", email, "Password:", password);
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/auth/login`,
+        {
+          email,
+          password,
+        }
+      );
+
+      console.log("API response:", res.data);
+
+      if (res.data && res.data.success) {
+        setAuth({
+          ...auth,
+          user: res.data.user,
+          token: res.data.token,
+        });
+        localStorage.setItem("auth", JSON.stringify(res.data));
+        toast.success("Đăng nhập thành công");
+        setEmail("");
+        setPassword("");
+        navigate("/");
+      } else {
+        setError(res.data.message || "Đăng nhập thất bại");
+        toast.error(res.data.message || "Đã xảy ra lỗi");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Lỗi kết nối đến server";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error("Login error:", error);
+    }
   };
 
   return (
@@ -31,6 +64,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              required
             />
           </div>
 
@@ -44,6 +78,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                required
               />
             </div>
           </div>

@@ -67,7 +67,7 @@ export const loginController = async (req, res) => {
       
       });
     
-      return res.status(201).send({
+      return res.status(200).send({
         success: true,
         message: "Logged in successfully",
         token,
